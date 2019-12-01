@@ -4,6 +4,7 @@ using System.Collections.Generic;
 namespace Reversi
 {
     enum Colour { black = 'b', white = 'w', none =' ' }
+    enum Heuristic { stupid, smart, smartest }
     internal class Node
     {
 
@@ -11,11 +12,9 @@ namespace Reversi
 
         List<Node> children { get; set; }
         Colour[,] tokens { get; set; }
-        Tuple<int, int>[] transition { get; set; }
-        int phase { get; set; }
-        int tokensPlaced { get; set; }
+        int[] move { get; set; }
         Colour turn { get; set; }
-
+        //Constructors
         public Node()
         {
             tokens = new Colour[8,8];
@@ -30,25 +29,19 @@ namespace Reversi
             tokens[4, 4] = Colour.white;
 
             children = new List<Node>();
-            phase = 0;
-            tokensPlaced = 0;
             turn = Colour.black;
-            transition = new Tuple<int, int>[2];
-        }
-        public Node(Node parent, Colour[,]tokens, Tuple<int,int>[] transition, int phase, int tokensPlaced, int turn)
+            move = new int[2];
+        }//End of Node()
+        public Node(Node parent, Colour[,]tokens, int[]move, Colour turn)
         {
             this.parent = parent;
             this.tokens = tokens;
-            this.transition = transition;
-            this.phase = phase;
-            this.tokensPlaced = tokensPlaced;
-
-            if (turn == -1)
-                this.turn = Colour.black;
-            else
-                this.turn = Colour.white;
+            this.move[0] = move[0];
+            this.move[1] = move[1];
+            this.turn = turn;
             this.children = new List<Node>();
-        }
+        }//End of Node(Node, Colour[,], int[], Colour)
+        //Functions
         public void PopulateChildren()
         {
             Colour playerTurn;
@@ -65,7 +58,10 @@ namespace Reversi
                 {
                     if (tokens[i, j] == Colour.none)
                     {
-
+                        if(CheckField(i, j, playerTurn))
+                        {
+                            children.Add(new Node(this, tempBoard, new int[2] { i, j }, playerTurn));
+                        }
                     }
                 }
             }
@@ -99,9 +95,326 @@ namespace Reversi
                 return true;
             return false;
         }//Enc of CheckBounds()
-        
-        //  Sprawdz czy:
-        //  - W rzędzie, po skosie, w kolumnie jest pion gracza
-        //  - Pomiędzy pionem gracza a polem x,y znajdują się tylko piony przeciwnika
+        public bool CheckField(int x, int y, Colour player)
+        {
+            bool playerTokenFound = false;
+            bool enemyTokensFound = false;
+
+            //check field
+            if (tokens[x, y] != Colour.none)
+                return false;
+            //check rows
+            //Up to down
+            for(int i = 0; i < x; i++)
+            {
+                if (!playerTokenFound)
+                {
+                    if(tokens[i, y] == player)
+                    {
+                        playerTokenFound = true;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (tokens[i, y] == player || tokens[i, y] == Colour.none)
+                    {
+                        enemyTokensFound = false;
+                        playerTokenFound = false;
+                        continue;
+                    }
+                    else
+                    {
+                        enemyTokensFound = true;
+                    }
+                }
+            }
+            if (playerTokenFound && enemyTokensFound)
+                return true;
+            //down to up
+            playerTokenFound = false;
+            enemyTokensFound = false;
+            for (int i = 7; i > x; i--)
+            {
+                if (!playerTokenFound)
+                {
+                    if (tokens[i, y] == player)
+                    {
+                        playerTokenFound = true;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (tokens[i, y] == player || tokens[i, y] == Colour.none)
+                    {
+                        enemyTokensFound = false;
+                        playerTokenFound = false;
+                        continue;
+                    }
+                    else
+                    {
+                        enemyTokensFound = true;
+                    }
+                }
+            }
+            if (playerTokenFound && enemyTokensFound)
+                return true;
+
+            //Check columns
+            //left to right
+            playerTokenFound = false;
+            enemyTokensFound = false;
+            for (int i = 0; i < y; i++)
+            {
+                if (!playerTokenFound)
+                {
+                    if (tokens[x, i] == player)
+                    {
+                        playerTokenFound = true;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (tokens[x, i] == player || tokens[x, i] == Colour.none)
+                    {
+                        enemyTokensFound = false;
+                        playerTokenFound = false;
+                        continue;
+                    }
+                    else
+                    {
+                        enemyTokensFound = true;
+                    }
+                }
+            }
+            if (playerTokenFound && enemyTokensFound)
+                return true;
+            //right to left
+            playerTokenFound = false;
+            enemyTokensFound = false;
+            for (int i = 7; i > y; i--)
+            {
+                if (!playerTokenFound)
+                {
+                    if (tokens[x, i] == player)
+                    {
+                        playerTokenFound = true;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (tokens[x, i] == player || tokens[x, i] == Colour.none)
+                    {
+                        enemyTokensFound = false;
+                        playerTokenFound = false;
+                        continue;
+                    }
+                    else
+                    {
+                        enemyTokensFound = true;
+                    }
+                }
+            }
+            if (playerTokenFound && enemyTokensFound)
+                return true;
+            int temp_x;
+            int temp_y;
+            int[] xy;
+            //Check diagonally 
+            //left up to right down
+            playerTokenFound = false;
+            enemyTokensFound = false;
+            xy = TopLeftXY(x, y);
+            temp_x = xy[0];
+            temp_y = xy[1];
+            while (temp_x < 8 && temp_y < 8)
+            {
+                if (!playerTokenFound)
+                {
+                    if (tokens[temp_x, temp_y] == player)
+                    {
+                        playerTokenFound = true;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (tokens[temp_x, temp_y] == player || tokens[temp_x, temp_y] == Colour.none)
+                    {
+                        enemyTokensFound = false;
+                        playerTokenFound = false;
+                        continue;
+                    }
+                    else
+                    {
+                        enemyTokensFound = true;
+                    }
+                }
+                temp_x++;
+                temp_y++;
+            }
+            if (playerTokenFound && enemyTokensFound)
+                return true;
+            //right up to left down
+            playerTokenFound = false;
+            enemyTokensFound = false;
+            xy = TopRightXY(x, y);
+            temp_x = xy[0];
+            temp_y = xy[1];
+            while (temp_x < 8 && temp_y >= 0)
+            {
+                if (!playerTokenFound)
+                {
+                    if (tokens[temp_x, temp_y] == player)
+                    {
+                        playerTokenFound = true;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (tokens[temp_x, temp_y] == player || tokens[temp_x, temp_y] == Colour.none)
+                    {
+                        enemyTokensFound = false;
+                        playerTokenFound = false;
+                        continue;
+                    }
+                    else
+                    {
+                        enemyTokensFound = true;
+                    }
+                }
+                temp_x++;
+                temp_y--;
+            }
+            if (playerTokenFound && enemyTokensFound)
+                return true;
+            //left up to right up
+            playerTokenFound = false;
+            enemyTokensFound = false;
+            xy = BotLeftXY(x, y);
+            temp_x = xy[0];
+            temp_y = xy[1];
+            while (temp_x >= 0 && temp_y < 8)
+            {
+                if (!playerTokenFound)
+                {
+                    if (tokens[temp_x, temp_y] == player)
+                    {
+                        playerTokenFound = true;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (tokens[temp_x, temp_y] == player || tokens[temp_x, temp_y] == Colour.none)
+                    {
+                        enemyTokensFound = false;
+                        playerTokenFound = false;
+                        continue;
+                    }
+                    else
+                    {
+                        enemyTokensFound = true;
+                    }
+                }
+                temp_x--;
+                temp_y++;
+            }
+            if (playerTokenFound && enemyTokensFound)
+                return true;
+            //right down to left up
+            playerTokenFound = false;
+            enemyTokensFound = false;
+            xy = BotRightXY(x, y);
+            temp_x = xy[0];
+            temp_y = xy[1];
+            while (temp_x >= 0 && temp_y >= 0)
+            {
+                if (!playerTokenFound)
+                {
+                    if (tokens[temp_x, temp_y] == player)
+                    {
+                        playerTokenFound = true;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (tokens[temp_x, temp_y] == player || tokens[temp_x, temp_y] == Colour.none)
+                    {
+                        enemyTokensFound = false;
+                        playerTokenFound = false;
+                        continue;
+                    }
+                    else
+                    {
+                        enemyTokensFound = true;
+                    }
+                }
+                temp_x--;
+                temp_y--;
+            }
+            if (playerTokenFound && enemyTokensFound)
+                return true;
+            return false;
+        }//End of CheckField()
+        int[] TopRightXY(int x, int y)
+        {
+            var temp_x = x;
+            var temp_y = y;
+            while(temp_x > 0 && temp_y < 7)
+            {
+                temp_x--;
+                temp_y++;
+            }
+            return new int[2] { temp_x, temp_y };
+        }//End of TopRightXY()
+        int[] TopLeftXY(int x, int y)
+        {
+            var temp_x = x;
+            var temp_y = y;
+            while (temp_x > 0 && temp_y > 0)
+            {
+                temp_x--;
+                temp_y--;
+            }
+            return new int[2] { temp_x, temp_y };
+        }//End of TopLeftXY()
+        int[] BotLeftXY(int x, int y)
+        {
+            var temp_x = x;
+            var temp_y = y;
+            while (temp_x < 7 && temp_y > 0)
+            {
+                temp_x++;
+                temp_y--;
+            }
+            return new int[2] { temp_x, temp_y };
+        }//End of BotLeftXY()
+        int[] BotRightXY(int x, int y)
+        {
+            var temp_x = x;
+            var temp_y = y;
+            while (temp_x < 7 && temp_y < 7)
+            {
+                temp_x++;
+                temp_y++;
+            }
+            return new int[2] { temp_x, temp_y };
+        }//End of BotRightXY()
+        public int Evaluate(Heuristic heuristic)
+        {
+
+            return 0;
+        }//End of Evaluate()
+        int TokenValue(int x, int y, int currentValue)
+        {
+            if(x+1 < 8 && y + 1 < 8)
+            return 0;
+        }
     }
 }
