@@ -6,7 +6,8 @@ namespace Reversi
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            DecisionTree ABTree = new DecisionTree(3);
+            ABTree.Initialize();
         }
     }
 }

@@ -8,11 +8,11 @@ namespace Reversi
     internal class Node
     {
 
-        Node parent { get; set; }
-
-        List<Node> children { get; set; }
+        public Node parent { get; set; }
+        public List<Node> children { get; set; }
         Colour[,] tokens { get; set; }
-        int[] move { get; set; }
+        public int[] move { get; set; }
+        int moveValue { get; set; }
         Colour turn { get; set; }
         //Constructors
         public Node()
@@ -31,8 +31,9 @@ namespace Reversi
             children = new List<Node>();
             turn = Colour.black;
             move = new int[2];
+            moveValue = 0;
         }//End of Node()
-        public Node(Node parent, Colour[,]tokens, int[]move, Colour turn)
+        public Node(Node parent, Colour[,]tokens, int[]move, Colour turn, int moveValue)
         {
             this.parent = parent;
             this.tokens = tokens;
@@ -40,7 +41,8 @@ namespace Reversi
             this.move[1] = move[1];
             this.turn = turn;
             this.children = new List<Node>();
-        }//End of Node(Node, Colour[,], int[], Colour)
+            this.moveValue = moveValue;
+        }//End of Node(Node, Colour[,], int[], Colour, int)
         //Functions
         public void PopulateChildren()
         {
@@ -51,16 +53,17 @@ namespace Reversi
                 playerTurn = Colour.black;
             Colour[,] tempBoard = CloneTokens(tokens);
             List<Tuple<int,int>> tokensToKill = TokensToKill(playerTurn);
-
+            int fieldCheck;
             for(int i = 0; i < 8; i++)
             {
                 for(int j = 0; j < 8; j++)
                 {
                     if (tokens[i, j] == Colour.none)
                     {
-                        if(CheckField(i, j, playerTurn))
+                        fieldCheck = CheckField(i, j, playerTurn);
+                        if (fieldCheck != 0)
                         {
-                            children.Add(new Node(this, tempBoard, new int[2] { i, j }, playerTurn));
+                            children.Add(new Node(this, tempBoard, new int[2] { i, j }, playerTurn, fieldCheck));
                         }
                     }
                 }
@@ -95,14 +98,17 @@ namespace Reversi
                 return true;
             return false;
         }//Enc of CheckBounds()
-        public bool CheckField(int x, int y, Colour player)
+        public int CheckField(int x, int y, Colour player)
         {
+            int points = 0;
+            int sectionPoints = 0;
+
             bool playerTokenFound = false;
             bool enemyTokensFound = false;
 
             //check field
             if (tokens[x, y] != Colour.none)
-                return false;
+                return 0;
             //check rows
             //Up to down
             for(int i = 0; i < x; i++)
@@ -121,19 +127,24 @@ namespace Reversi
                     {
                         enemyTokensFound = false;
                         playerTokenFound = false;
+                        sectionPoints = 0;
                         continue;
                     }
                     else
                     {
                         enemyTokensFound = true;
+                        sectionPoints++;
                     }
                 }
             }
             if (playerTokenFound && enemyTokensFound)
-                return true;
+            {
+                points += sectionPoints;
+            }
             //down to up
             playerTokenFound = false;
             enemyTokensFound = false;
+            sectionPoints = 0;
             for (int i = 7; i > x; i--)
             {
                 if (!playerTokenFound)
@@ -150,21 +161,26 @@ namespace Reversi
                     {
                         enemyTokensFound = false;
                         playerTokenFound = false;
+                        sectionPoints = 0;
                         continue;
                     }
                     else
                     {
                         enemyTokensFound = true;
+                        sectionPoints++;
                     }
                 }
             }
             if (playerTokenFound && enemyTokensFound)
-                return true;
+            {
+                points += sectionPoints;
+            }
 
             //Check columns
             //left to right
             playerTokenFound = false;
             enemyTokensFound = false;
+            sectionPoints = 0;
             for (int i = 0; i < y; i++)
             {
                 if (!playerTokenFound)
@@ -181,19 +197,24 @@ namespace Reversi
                     {
                         enemyTokensFound = false;
                         playerTokenFound = false;
+                        sectionPoints = 0;
                         continue;
                     }
                     else
                     {
                         enemyTokensFound = true;
+                        sectionPoints++;
                     }
                 }
             }
             if (playerTokenFound && enemyTokensFound)
-                return true;
+            {
+                points += sectionPoints;
+            }
             //right to left
             playerTokenFound = false;
             enemyTokensFound = false;
+            sectionPoints = 0;
             for (int i = 7; i > y; i--)
             {
                 if (!playerTokenFound)
@@ -210,23 +231,28 @@ namespace Reversi
                     {
                         enemyTokensFound = false;
                         playerTokenFound = false;
+                        sectionPoints = 0;
                         continue;
                     }
                     else
                     {
                         enemyTokensFound = true;
+                        sectionPoints++;
                     }
                 }
             }
             if (playerTokenFound && enemyTokensFound)
-                return true;
+            {
+                points += sectionPoints;
+            }
+            //Check diagonally
             int temp_x;
             int temp_y;
-            int[] xy;
-            //Check diagonally 
+            int[] xy; 
             //left up to right down
             playerTokenFound = false;
             enemyTokensFound = false;
+            sectionPoints = 0;
             xy = TopLeftXY(x, y);
             temp_x = xy[0];
             temp_y = xy[1];
@@ -246,21 +272,26 @@ namespace Reversi
                     {
                         enemyTokensFound = false;
                         playerTokenFound = false;
+                        sectionPoints = 0;
                         continue;
                     }
                     else
                     {
                         enemyTokensFound = true;
+                        sectionPoints++;
                     }
                 }
                 temp_x++;
                 temp_y++;
             }
             if (playerTokenFound && enemyTokensFound)
-                return true;
+            {
+                points += sectionPoints;
+            }
             //right up to left down
             playerTokenFound = false;
             enemyTokensFound = false;
+            sectionPoints = 0;
             xy = TopRightXY(x, y);
             temp_x = xy[0];
             temp_y = xy[1];
@@ -280,21 +311,26 @@ namespace Reversi
                     {
                         enemyTokensFound = false;
                         playerTokenFound = false;
+                        sectionPoints = 0;
                         continue;
                     }
                     else
                     {
                         enemyTokensFound = true;
+                        sectionPoints++;
                     }
                 }
                 temp_x++;
                 temp_y--;
             }
             if (playerTokenFound && enemyTokensFound)
-                return true;
+            {
+                points += sectionPoints;
+            }
             //left up to right up
             playerTokenFound = false;
             enemyTokensFound = false;
+            sectionPoints = 0;
             xy = BotLeftXY(x, y);
             temp_x = xy[0];
             temp_y = xy[1];
@@ -314,21 +350,26 @@ namespace Reversi
                     {
                         enemyTokensFound = false;
                         playerTokenFound = false;
+                        sectionPoints = 0;
                         continue;
                     }
                     else
                     {
                         enemyTokensFound = true;
+                        sectionPoints++;
                     }
                 }
                 temp_x--;
                 temp_y++;
             }
             if (playerTokenFound && enemyTokensFound)
-                return true;
+            {
+                points += sectionPoints;
+            }
             //right down to left up
             playerTokenFound = false;
             enemyTokensFound = false;
+            sectionPoints = 0;
             xy = BotRightXY(x, y);
             temp_x = xy[0];
             temp_y = xy[1];
@@ -348,32 +389,89 @@ namespace Reversi
                     {
                         enemyTokensFound = false;
                         playerTokenFound = false;
+                        sectionPoints = 0;
                         continue;
                     }
                     else
                     {
                         enemyTokensFound = true;
+                        sectionPoints++;
                     }
                 }
                 temp_x--;
                 temp_y--;
             }
             if (playerTokenFound && enemyTokensFound)
-                return true;
-            return false;
+            {
+                points += sectionPoints;
+            }
+            return points;
+
         }//End of CheckField()
-        int[] TopRightXY(int x, int y)
+        public int Evaluate(Heuristic heuristic)
+        {
+            if (heuristic == Heuristic.stupid)
+            {
+                return (new Random(100)).Next();
+            }
+            if (heuristic == Heuristic.smart)
+            {
+                return moveValue;
+            }
+            if (heuristic == Heuristic.smartest)
+            {
+                return TableBasedEvaluation(move[0], move[1]);
+            }
+            return 0;
+        }//End of Evaluate()
+        private int TableBasedEvaluation(int x, int y)
+        {
+            if ((x == 0 || x == 7) && 
+                (y == 0 || y == 7))
+            {
+                return 100;
+            }
+            if((x == 0 || x == 7) && (y == 1 || y == 6) ||
+               (y == 0 || y == 7) && (x == 1 || x == 6))
+            {
+                return -20;
+            }
+            if((x == 1 || x == 6) && 
+               (y == 1 || y == 6))
+            {
+                return -50;
+            }
+            if((x == 0 || x == 7) && (y == 2 || y == 5) ||
+               (y == 0 || y == 7) && (x == 2 || x == 5))
+            {
+                return 10;
+            }
+            if((x == 3 || x == 4) && (y == 0 || y == 7) ||
+               (y == 3 || y == 4) && (x == 0 || x == 7))
+            {
+                return 5;
+            }
+            if((x == 1 || x == 6) && (y > 1 && x < 6) ||
+               (y == 1 || y == 6) && (x > 1 && x < 6))
+            {
+                return -2;
+            }
+            if ((x > 1 && x < 6) && (y > 1 && y < 6))
+                return -1;
+            return 0;
+        }//End of TableBasedEvaluation()
+        private int[] TopRightXY(int x, int y)
         {
             var temp_x = x;
             var temp_y = y;
-            while(temp_x > 0 && temp_y < 7)
+            while (temp_x > 0 && temp_y < 7)
             {
                 temp_x--;
                 temp_y++;
             }
             return new int[2] { temp_x, temp_y };
         }//End of TopRightXY()
-        int[] TopLeftXY(int x, int y)
+        private int[] TopLeftXY(int x, int y)
         {
             var temp_x = x;
             var temp_y = y;
@@ -384,7 +482,7 @@ namespace Reversi
             }
             return new int[2] { temp_x, temp_y };
         }//End of TopLeftXY()
-        int[] BotLeftXY(int x, int y)
+        private int[] BotLeftXY(int x, int y)
         {
             var temp_x = x;
             var temp_y = y;
@@ -395,7 +493,7 @@ namespace Reversi
             }
             return new int[2] { temp_x, temp_y };
         }//End of BotLeftXY()
-        int[] BotRightXY(int x, int y)
+        private int[] BotRightXY(int x, int y)
         {
             var temp_x = x;
             var temp_y = y;
@@ -406,15 +504,5 @@ namespace Reversi
             }
             return new int[2] { temp_x, temp_y };
         }//End of BotRightXY()
-        public int Evaluate(Heuristic heuristic)
-        {
-
-            return 0;
-        }//End of Evaluate()
-        int TokenValue(int x, int y, int currentValue)
-        {
-            if(x+1 < 8 && y + 1 < 8)
-            return 0;
-        }
     }
 }
